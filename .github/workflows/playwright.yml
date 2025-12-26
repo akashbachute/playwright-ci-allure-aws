@@ -63,6 +63,14 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       # ---------------------------
+      # Install AWS CLI (FIX for exit code 127)
+      # ---------------------------
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+      # ---------------------------
       # Upload Allure Report to AWS S3
       # ---------------------------
       - name: Upload Allure report to AWS S3
