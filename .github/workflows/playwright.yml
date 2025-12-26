@@ -13,6 +13,9 @@ jobs:
     timeout-minutes: 60
 
     steps:
+      # ---------------------------
+      # Checkout Source Code
+      # ---------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -24,15 +27,27 @@ jobs:
         with:
           node-version: lts/*
 
+      # ---------------------------
+      # Install Dependencies
+      # ---------------------------
       - name: Install NPM dependencies
         run: npm ci
 
+      # ---------------------------
+      # Install Playwright Browsers
+      # ---------------------------
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
+      # ---------------------------
+      # Run Playwright Tests
+      # ---------------------------
       - name: Run Playwright tests
         run: npx playwright test
 
+      # ---------------------------
+      # Generate Allure Report
+      # ---------------------------
       - name: Generate Allure report
         if: always()
         run: npm run allure:generate
@@ -56,7 +71,7 @@ jobs:
           aws s3 sync allure-report/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
 
       # ---------------------------
-      # Upload Allure Report as Artifact
+      # Upload Allure Report as Artifact (Backup)
       # ---------------------------
       - name: Upload Allure report artifact
         if: always()
@@ -67,7 +82,7 @@ jobs:
           retention-days: 30
 
       # ---------------------------
-      # Upload Playwright HTML Report
+      # Upload Playwright HTML Report (Debug)
       # ---------------------------
       - name: Upload Playwright HTML report
         if: ${{ !cancelled() }}
@@ -88,10 +103,9 @@ jobs:
           server_port: ${{ secrets.SMTP_PORT }}
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: >
-            Playwright Automation Report | ${{ job.status }}
+          subject: "Playwright Automation Report | ${{ job.status }}"
           to: ${{ secrets.EMAIL_TO }}
-          from: Playwright CI <${{ secrets.SMTP_USERNAME }}>
+          from: "Playwright CI <${{ secrets.SMTP_USERNAME }}>"
           body: |
             Hi Team,
 
@@ -107,7 +121,4 @@ jobs:
             🔗 CI Run Details:
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
-            Please review the report and let us know if there are any concerns.
-
-            Thanks,
-            Automation QA Team
+            Please review th
