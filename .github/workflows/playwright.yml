@@ -8,7 +8,7 @@ on:
 
 jobs:
   playwright-tests:
-    name: Run Playwright Tests with Allure & AWS S3
+    name: Run Playwright Tests with Allure, AWS S3 & Email
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -71,7 +71,7 @@ jobs:
           aws s3 sync allure-report/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
 
       # ---------------------------
-      # Upload Allure Report as Artifact (Backup)
+      # Upload Allure Report as Artifact
       # ---------------------------
       - name: Upload Allure report artifact
         if: always()
@@ -82,7 +82,7 @@ jobs:
           retention-days: 30
 
       # ---------------------------
-      # Upload Playwright HTML Report (Debug)
+      # Upload Playwright HTML Report
       # ---------------------------
       - name: Upload Playwright HTML report
         if: ${{ !cancelled() }}
@@ -93,7 +93,7 @@ jobs:
           retention-days: 30
 
       # ---------------------------
-      # Send Email Notification
+      # Send Email Notification (HTML – clickable links)
       # ---------------------------
       - name: Send email notification
         if: always()
@@ -106,19 +106,32 @@ jobs:
           subject: "Playwright Automation Report | ${{ job.status }}"
           to: ${{ secrets.EMAIL_TO }}
           from: "Playwright CI <${{ secrets.SMTP_USERNAME }}>"
-          body: |
-            Hi Team,
+          html_body: |
+            <p>Hi Team,</p>
 
-            The Playwright automation execution has completed.
+            <p>The Playwright automation execution has completed.</p>
 
-            ▶ Execution Status: ${{ job.status }}
-            ▶ Repository: ${{ github.repository }}
-            ▶ Branch: ${{ github.ref_name }}
+            <ul>
+              <li><b>Execution Status:</b> ${{ job.status }}</li>
+              <li><b>Repository:</b> ${{ github.repository }}</li>
+              <li><b>Branch:</b> ${{ github.ref_name }}</li>
+            </ul>
 
-            📊 Allure Test Execution Report:
-            http://${{ secrets.AWS_S3_BUCKET }}.s3-website-${{ secrets.AWS_REGION }}.amazonaws.com
+            <p>
+              <b>📊 Allure Test Execution Report:</b><br/>
+              <a href="http://${{ secrets.AWS_S3_BUCKET }}.s3-website-${{ secrets.AWS_REGION }}.amazonaws.com">
+                View Allure Report
+              </a>
+            </p>
 
-            🔗 CI Run Details:
-            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            <p>
+              <b>🔗 CI Run Details:</b><br/>
+              <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">
+                View GitHub Actions Run
+              </a>
+            </p>
 
-            Please review th
+            <p>
+              Thanks,<br/>
+              Automation QA Team
+            </p>
