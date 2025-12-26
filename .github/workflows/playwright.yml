@@ -13,9 +13,6 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      # ---------------------------
-      # Checkout Source Code
-      # ---------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -27,34 +24,19 @@ jobs:
         with:
           node-version: lts/*
 
-      # ---------------------------
-      # Install Dependencies
-      # ---------------------------
       - name: Install NPM dependencies
         run: npm ci
 
-      # ---------------------------
-      # Install Playwright Browsers
-      # ---------------------------
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      # ---------------------------
-      # Run Playwright Tests
-      # ---------------------------
       - name: Run Playwright tests
         run: npx playwright test
 
-      # ---------------------------
-      # Generate Allure Report
-      # ---------------------------
       - name: Generate Allure report
         if: always()
         run: npm run allure:generate
 
-      # ---------------------------
-      # Configure AWS Credentials (USING GITHUB SECRETS)
-      # ---------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -62,17 +44,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # ---------------------------
-      # Upload Allure Report to AWS S3 (STATIC WEBSITE)
-      # ---------------------------
       - name: Upload Allure report to AWS S3
         if: always()
         run: |
           aws s3 sync allure-report/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
 
-      # ---------------------------
-      # Upload Allure Report as Artifact (Backup)
-      # ---------------------------
       - name: Upload Allure report artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -81,13 +57,10 @@ jobs:
           path: allure-report/
           retention-days: 30
 
-      # ---------------------------
-      # Upload Playwright HTML Report (Debug)
-      # ---------------------------
       - name: Upload Playwright HTML report
-  if: ${{ !cancelled() }}
-  uses: actions/upload-artifact@v4
-  with:
-    name: playwright-report
-    path: playwright-report/
-    retention-days: 30
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
