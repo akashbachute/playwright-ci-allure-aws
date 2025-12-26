@@ -1,48 +1,91 @@
-name: Playwright Tests
+name: Playwright CI Tests
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
-  test:
-    timeout-minutes: 60
+  playwright-tests:
+    name: Run Playwright Tests with Allure & AWS S3
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
-      - name: Checkout code
+      # ---------------------------
+      # Checkout Source Code
+      # ---------------------------
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ---------------------------
+      # Setup Node.js
+      # ---------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
 
-      - name: Install dependencies
+      # ---------------------------
+      # Install Dependencies
+      # ---------------------------
+      - name: Install NPM dependencies
         run: npm ci
 
-      - name: Install Playwright Browsers
+      # ---------------------------
+      # Install Playwright Browsers
+      # ---------------------------
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
+      # ---------------------------
+      # Run Playwright Tests
+      # ---------------------------
       - name: Run Playwright tests
         run: npx playwright test
 
-      - name: Generate Allure Report
-        if: ${{ always() }}
+      # ---------------------------
+      # Generate Allure Report
+      # ---------------------------
+      - name: Generate Allure report
+        if: always()
         run: npm run allure:generate
 
-      - name: Upload Allure Report as Artifact
-        if: ${{ always() }}
+      # ---------------------------
+      # Configure AWS Credentials (USING GITHUB SECRETS)
+      # ---------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # ---------------------------
+      # Upload Allure Report to AWS S3 (STATIC WEBSITE)
+      # ---------------------------
+      - name: Upload Allure report to AWS S3
+        if: always()
+        run: |
+          aws s3 sync allure-report/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
+
+      # ---------------------------
+      # Upload Allure Report as Artifact (Backup)
+      # ---------------------------
+      - name: Upload Allure report artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-report/
           retention-days: 30
 
-      - name: Upload Playwright HTML Report
-        if: ${{ !cancelled() }}
+      # ---------------------------
+      # Upload Playwright HTML Report (Debug)
+      # ---------------------------
+      - name: Upload Playwright HTML report
+        if: !cancelled()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
