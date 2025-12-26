@@ -37,6 +37,9 @@ jobs:
         if: always()
         run: npm run allure:generate
 
+      # ---------------------------
+      # Configure AWS Credentials
+      # ---------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -44,11 +47,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # ---------------------------
+      # Upload Allure Report to AWS S3
+      # ---------------------------
       - name: Upload Allure report to AWS S3
         if: always()
         run: |
           aws s3 sync allure-report/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
 
+      # ---------------------------
+      # Upload Allure Report as Artifact
+      # ---------------------------
       - name: Upload Allure report artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,6 +66,9 @@ jobs:
           path: allure-report/
           retention-days: 30
 
+      # ---------------------------
+      # Upload Playwright HTML Report
+      # ---------------------------
       - name: Upload Playwright HTML report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -64,3 +76,38 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
+
+      # ---------------------------
+      # Send Email Notification
+      # ---------------------------
+      - name: Send email notification
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: >
+            Playwright Automation Report | ${{ job.status }}
+          to: ${{ secrets.EMAIL_TO }}
+          from: Playwright CI <${{ secrets.SMTP_USERNAME }}>
+          body: |
+            Hi Team,
+
+            The Playwright automation execution has completed.
+
+            ▶ Execution Status: ${{ job.status }}
+            ▶ Repository: ${{ github.repository }}
+            ▶ Branch: ${{ github.ref_name }}
+
+            📊 Allure Test Execution Report:
+            http://${{ secrets.AWS_S3_BUCKET }}.s3-website-${{ secrets.AWS_REGION }}.amazonaws.com
+
+            🔗 CI Run Details:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Please review the report and let us know if there are any concerns.
+
+            Thanks,
+            Automation QA Team
