@@ -63,12 +63,20 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       # ---------------------------
-      # Install AWS CLI (FIX for exit code 127)
+      # Install unzip (required for AWS CLI v2)
       # ---------------------------
-      - name: Install AWS CLI
+      - name: Install unzip
+        run: sudo apt-get update && sudo apt-get install -y unzip
+
+      # ---------------------------
+      # Install AWS CLI v2 (OFFICIAL METHOD)
+      # ---------------------------
+      - name: Install AWS CLI v2
         run: |
-          sudo apt-get update
-          sudo apt-get install -y awscli
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          aws --version
 
       # ---------------------------
       # Upload Allure Report to AWS S3
@@ -76,7 +84,7 @@ jobs:
       - name: Upload Allure report to AWS S3
         if: always()
         run: |
-          aws s3 sync allure-report/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
+          aws s3 sync allure-report/ "s3://${{ secrets.AWS_S3_BUCKET }}/" --delete
 
       # ---------------------------
       # Upload Allure Report as Artifact
